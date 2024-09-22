@@ -1,15 +1,15 @@
 // 另一种理解方式，由抽象出发
 
-use std::{
-    net::{TcpListener, TcpStream},
-    pin::Pin,
-    task::{Context, Poll},
+use bytes::BytesMut;
+use futures::{Sink, Stream};
+use tokio_util::codec::{Decoder, Encoder, LengthDelimitedCodec};
+
+use crate::{
+    common::{Request, Response},
+    Error, Result,
 };
 
-use futures::{Sink, Stream};
-
-use crate::{common::{Request, Response}, Error, Result};
-
+// 处理单个连接
 pub struct Nexus<U, D>
 where
     U: Stream<Item = Request> + Sink<Response>,
@@ -19,39 +19,28 @@ where
     down: D,
 }
 
-
-
-pub struct AisleIn(TcpStream);
-impl AisleIn{
-    pub async fn from_tcp(mut stream: TcpStream) -> Result<Self>{
-        Ok(Self(stream))
-
-    }
-}
-impl Stream for AisleIn {
-    type Item = Request;
-
-    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        todo!()
-    }
-}
-impl Sink<Response> for AisleIn{
+pub struct RequestCodec(LengthDelimitedCodec);
+impl Encoder<Request> for RequestCodec {
     type Error = Error;
-    
-    fn poll_ready(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        todo!()
-    }
-    
-    fn start_send(self: Pin<&mut Self>, item: Response) -> Result<(), Self::Error> {
-        todo!()
-    }
-    
-    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        todo!()
-    }
-    
-    fn poll_close(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        todo!()
-    }
 
+    fn encode(&mut self, item: Request, dst: &mut BytesMut) -> Result<()> {
+        let b = rmp_serde::to_vec(&item)?;
+        self.0.encode(b.into(), dst)?;
+        Ok(())
+    }
 }
+impl Decoder for RequestCodec {
+    type Item = Request;
+    type Error = Error;
+
+    fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>> {
+        if let Some(b) = self.0.decode(src)? {
+            let item = rmp_serde::from_slice(&b)?;
+            Ok(Some(item))
+        } else {
+            Ok(None)
+        }
+    }
+}
+
+// 然后设计一种对应nexus.in的结构，作为处理单个个入站连接的处理器

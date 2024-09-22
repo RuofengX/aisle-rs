@@ -10,13 +10,7 @@ pub enum Command {
     UDP,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Request {
-    Meta(ReqMeta),
-    Data(Bytes),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ReqMeta{
+pub struct Request {
     pub cmd: Command,
     pub domain: String,
     pub dst: SocketAddr,
