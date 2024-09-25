@@ -2,29 +2,46 @@ use std::net::SocketAddr;
 
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
+use tokio::net::TcpStream;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub enum Command {
-    Connect,
-    Bind,
-    UDP,
-}
+use crate::error::AppError;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Request {
-    pub cmd: Command,
-    pub domain: String,
-    pub dst: SocketAddr,
-    pub data: Bytes,
+pub enum Request {
+    Cmd(cmd::Command),
+    Data(Bytes),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Response{
-    Ok(RespData),
-    None,
-}
+pub struct Response(Bytes);
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RespData{
-    pub srt: SocketAddr,
-    pub data: Bytes,
+pub mod cmd {
+    use super::*;
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    pub struct Command {
+        pub v: Verb,
+        pub dst: Destination,
+    }
+
+    #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+    pub enum Verb {
+        Connect,
+        Bind,
+        UDP,
+    }
+    #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+    pub enum Destination {
+        Domain(String),
+        Socket(SocketAddr),
+    }
+
+    impl Destination {
+        pub async fn connect(&self) -> Result<TcpStream, AppError> {
+            let st = match self {
+                Self::Domain(addr) => TcpStream::connect(addr).await?,
+                Self::Socket(addr) => TcpStream::connect(addr).await?,
+            };
+            Ok(st)
+        }
+    }
 }
