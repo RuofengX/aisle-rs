@@ -3,7 +3,7 @@ use thiserror::Error;
 // pub type Result<T> = std::result::Result<T, AppError>;
 
 #[derive(Debug, Error)]
-pub enum AppError {
+pub enum Error {
     #[error("not implement error << {0}")]
     NotImplement(String),
     #[error("item codec error << {0}")]
