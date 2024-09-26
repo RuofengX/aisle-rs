@@ -28,8 +28,6 @@ pub enum CodecError {
     Encode(#[from] rmp_serde::encode::Error),
     #[error("item convert error << {0}")]
     Decode(#[from] rmp_serde::decode::Error),
-    #[error("futures_io error << {0}")]
-    Futures(#[from] futures::io::Error),
 }
 
 #[derive(Debug, Error)]
