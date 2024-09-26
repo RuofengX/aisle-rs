@@ -1,4 +1,4 @@
-use std::net::SocketAddr;
+use std::{io, net::SocketAddr};
 
 use monoio::net::TcpStream;
 use serde::{Deserialize, Serialize};
@@ -7,7 +7,7 @@ use crate::error::Error;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Meta {
-    cmd: Command,
+    pub cmd: Command,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -29,7 +29,7 @@ pub enum Destination {
 }
 
 impl Destination {
-    pub async fn connect(&self) -> Result<TcpStream, Error> {
+    pub async fn connect(&self) -> Result<TcpStream, io::Error> {
         let st = match self {
             Self::Domain(addr) => TcpStream::connect(addr).await?,
             Self::Socket(addr) => TcpStream::connect(addr).await?,

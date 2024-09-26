@@ -28,6 +28,8 @@ pub enum CodecError {
     Encode(#[from] rmp_serde::encode::Error),
     #[error("item convert error << {0}")]
     Decode(#[from] rmp_serde::decode::Error),
+    #[error("key length error :: {0}")]
+    KeyLength(usize),
 }
 
 #[derive(Debug, Error)]
