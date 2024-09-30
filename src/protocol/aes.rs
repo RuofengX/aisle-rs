@@ -1,18 +1,24 @@
-use aes::cipher::{generic_array::GenericArray, BlockDecrypt, BlockEncrypt};
+use std::error::Error;
+
+use bytes::Bytes;
+use soft_aes::aes::{aes_dec_ecb, aes_enc_block, aes_enc_ecb};
 
 #[derive(Debug)]
-pub struct Codec<C: BlockDecrypt + BlockEncrypt> {
-    cipher: C,
+pub struct Codec256 {
+    key: [u8; 32],
 }
-impl<C: BlockDecrypt + BlockEncrypt> Codec<C> {
-    pub fn new(cipher: C) -> Self {
-        Self { cipher }
+
+impl Codec256 {
+    pub fn new(key: [u8; 32]) -> Self {
+        Self { key }
     }
-    pub fn decode(&self, mut block: GenericArray<u8, C::BlockSize>) {
-        self.cipher.decrypt_block(&mut block);
+    pub fn decode(&self, data: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+        let result = aes_dec_ecb(&data, self.key.as_slice(), Some("0x80"))?;
+        Ok(result)
     }
 
-    pub fn encode(&self, mut block: GenericArray<u8, C::BlockSize>) {
-        self.cipher.encrypt_block(&mut block);
+    pub fn encode(&self, data: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+        let result = aes_enc_ecb(data, self.key.as_slice(), Some("0x80"))?;
+        Ok(result)
     }
 }
